@@ -67,7 +67,6 @@ public final class PdfLocationResolver {
 
     public static Optional<PageSpan> pdfPageSpan(BibEntry entry, BibEntry fileOwner) {
         return entry.getField(StandardField.PAGES)
-                    .filter(StringUtil::isNotBlank)
                     .flatMap(PdfLocationResolver::printedSpan)
                     .flatMap(printed -> toPdfSpan(printed, pageOffset(fileOwner)));
     }
@@ -79,7 +78,7 @@ public final class PdfLocationResolver {
                         .flatMap(PdfLocationResolver::parseInteger)
                         .orElse(0);
     }
-
+    
     private static Optional<Integer> pdfPage(BibEntry entry, BibEntry fileOwner) {
         return firstPrintedPage(entry).flatMap(printed -> toPdfPage(printed, pageOffset(fileOwner)));
     }
@@ -90,12 +89,8 @@ public final class PdfLocationResolver {
                     .flatMap(PdfLocationResolver::firstArabicPage);
     }
 
-    private static Optional<Integer> firstArabicPage(String pages) {
-        return firstArabicNumber(pages);
-    }
-
     private static Optional<PrintedSpan> printedSpan(String pages) {
-        return firstArabicNumber(pages).flatMap(start -> printedSpanFrom(pages, start));
+        return firstArabicPage(pages).flatMap(start -> printedSpanFrom(pages, start));
     }
 
     private static Optional<PrintedSpan> printedSpanFrom(String pages, int start) {
@@ -107,7 +102,7 @@ public final class PdfLocationResolver {
         if (!separator.lookingAt()) {
             return Optional.of(new PrintedSpan(start, start));
         }
-        return firstArabicNumber(rest.substring(separator.end()))
+        return firstArabicPage(rest.substring(separator.end()))
                 .filter(end -> end >= start)
                 .map(end -> new PrintedSpan(start, end));
     }
@@ -120,7 +115,7 @@ public final class PdfLocationResolver {
         return matcher.end();
     }
 
-    private static Optional<Integer> firstArabicNumber(String pages) {
+    private static Optional<Integer> firstArabicPage(String pages) {
         Matcher matcher = FIRST_PAGE.matcher(pages);
         if (!matcher.lookingAt()) {
             return Optional.empty();
@@ -134,9 +129,7 @@ public final class PdfLocationResolver {
 
     private static Optional<PageSpan> toPdfSpan(PrintedSpan printed, int offset) {
         return toPdfPage(printed.first(), offset).flatMap(first ->
-                toPdfPage(printed.last(), offset)
-                        .filter(last -> last >= first)
-                        .map(last -> new PageSpan(first, last)));
+                toPdfPage(printed.last(), offset).map(last -> new PageSpan(first, last)));
     }
 
     private static Optional<Integer> toPdfPage(int printedPage, int offset) {

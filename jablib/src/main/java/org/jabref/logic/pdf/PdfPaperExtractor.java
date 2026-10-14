@@ -23,9 +23,6 @@ public final class PdfPaperExtractor {
 
     /// @return the new PDF, or empty when `entry` does not name a strict sub-range of `source`
     public static Optional<Path> extractPaper(Path source, BibEntry entry, Path targetDirectory) throws IOException {
-        if (!FileUtil.isPDFFile(source)) {
-            return Optional.empty();
-        }
         Optional<PageSpan> span = PdfLocationResolver.pdfPageSpan(entry, entry);
         if (span.isEmpty()) {
             return Optional.empty();
@@ -33,8 +30,8 @@ public final class PdfPaperExtractor {
 
         try (PDDocument document = Loader.loadPDF(source.toFile())) {
             int pageCount = document.getNumberOfPages();
-            PageSpan pages = span.get();
-            if ((pages.firstPage() > pageCount) || (pages.lastPage() > pageCount)) {
+            PageSpan pages = span.orElseThrow();
+            if (pages.lastPage() > pageCount) {
                 return Optional.empty();
             }
             int length = pages.lastPage() - pages.firstPage() + 1;

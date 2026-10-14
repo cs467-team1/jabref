@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PdfPaperExtractorTest {
 
@@ -30,8 +29,7 @@ class PdfPaperExtractorTest {
 
         Optional<Path> extracted = PdfPaperExtractor.extractPaper(source, paper, tempDir);
 
-        assertTrue(extracted.isPresent());
-        assertEquals(2, pageCount(extracted.get()));
+        assertEquals(2, pageCount(extracted.orElseThrow()));
         assertEquals(5, pageCount(source));
     }
 
@@ -44,9 +42,8 @@ class PdfPaperExtractorTest {
 
         Optional<Path> extracted = PdfPaperExtractor.extractPaper(source, paper, tempDir);
 
-        assertTrue(extracted.isPresent());
-        assertEquals(2, pageCount(extracted.get()));
-        assertTrue(extracted.get().getFileName().toString().contains("p16-17"));
+        assertEquals(2, pageCount(extracted.orElseThrow()));
+        assertEquals("proceedings-p16-17.pdf", extracted.orElseThrow().getFileName().toString());
     }
 
     @Test
