@@ -1,5 +1,6 @@
 package org.jabref.gui.linkedfile;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -13,13 +14,21 @@ import org.jabref.gui.frame.ExternalApplicationsPreferences;
 import org.jabref.gui.util.FileDialogConfiguration;
 import org.jabref.logic.FilePreferences;
 import org.jabref.logic.l10n.Localization;
+import org.jabref.logic.pdf.PdfPaperExtractor;
+import org.jabref.logic.util.StandardFileType;
+import org.jabref.logic.util.io.FileUtil;
 import org.jabref.model.FieldChange;
 import org.jabref.model.database.BibDatabaseContext;
 import org.jabref.model.entry.BibEntry;
 import org.jabref.model.entry.LinkedFile;
 import org.jabref.model.undo.UndoableFieldChange;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class AttachFileAction extends SimpleCommand {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AttachFileAction.class);
 
     private final LibraryTab libraryTab;
     private final StateManager stateManager;
@@ -87,7 +96,28 @@ public class AttachFileAction extends SimpleCommand {
                              fieldChange.ifPresent(change -> {
                                  libraryTab.getUndoManager().addEdit(new UndoableFieldChange(change));
                              });
+                             attachPaperExcerpt(entry, newFile);
                          });
         });
+    }
+
+    /// When the chosen PDF holds more than the entry's pages, keep that file and also attach a copy of just those pages.
+    private void attachPaperExcerpt(BibEntry entry, Path newFile) {
+        if (!FileUtil.isPDFFile(newFile) || (newFile.getParent() == null)) {
+            return;
+        }
+        try {
+            PdfPaperExtractor.extractPaper(newFile, entry, newFile.getParent())
+                             .ifPresent(extracted -> {
+                                 LinkedFile paper = new LinkedFile(
+                                         entry.getCitationKey().orElse("Paper"),
+                                         extracted.toAbsolutePath(),
+                                         StandardFileType.PDF.getName());
+                                 entry.addFile(paper).ifPresent(change ->
+                                         libraryTab.getUndoManager().addEdit(new UndoableFieldChange(change)));
+                             });
+        } catch (IOException e) {
+            LOGGER.error("Could not copy the paper out of {}", newFile, e);
+        }
     }
 }

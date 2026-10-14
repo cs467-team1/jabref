@@ -31,6 +31,11 @@ public final class PdfLocationResolver {
 
     private static final Pattern FIRST_PAGE = Pattern.compile("\\s*([A-Za-z]?)([0-9]+|[ivxlcdmIVXLCDM]+)[A-Za-z]?");
 
+    private static final Pattern RANGE_SEPARATOR = Pattern.compile("\\s*(?:--|\u2014|\u2013|-)\\s*");
+
+    /// BibTeX `43+` means the pages following 43, which has no last page.
+    private static final Pattern FOLLOWING_PAGES = Pattern.compile("\\s*\\+");
+
     private static final Pattern INTEGER = Pattern.compile("-?[0-9]+");
 
     private PdfLocationResolver() {
@@ -62,6 +67,22 @@ public final class PdfLocationResolver {
                        .isPresent();
     }
 
+    public static Optional<PageSpan> pdfPageSpan(BibEntry entry, BibEntry fileOwner) {
+        return entry.getField(StandardField.PAGES)
+                    .map(String::trim)
+                    .filter(pages -> !pages.isEmpty())
+                    .flatMap(PdfLocationResolver::printedSpan)
+                    .flatMap(printed -> toPdfSpan(printed, pageOffset(fileOwner)));
+    }
+
+    public static int pageOffset(BibEntry fileOwner) {
+        return fileOwner.getField(PAGE_OFFSET)
+                        .map(String::trim)
+                        .filter(value -> !value.isEmpty())
+                        .flatMap(PdfLocationResolver::parseInteger)
+                        .orElse(0);
+    }
+
     private static Optional<Integer> pdfPage(BibEntry entry, BibEntry fileOwner) {
         return firstPrintedPage(entry).flatMap(printed -> toPdfPage(printed, pageOffset(fileOwner)));
     }
@@ -74,6 +95,37 @@ public final class PdfLocationResolver {
     }
 
     private static Optional<Integer> firstArabicPage(String pages) {
+        return firstArabicNumber(pages);
+    }
+
+    private static Optional<PrintedSpan> printedSpan(String pages) {
+        Optional<Integer> first = firstArabicNumber(pages);
+        if (first.isEmpty()) {
+            return Optional.empty();
+        }
+        int start = first.get();
+        String rest = pages.substring(firstPageEnd(pages));
+        if (FOLLOWING_PAGES.matcher(rest).lookingAt()) {
+            return Optional.empty();
+        }
+        Matcher separator = RANGE_SEPARATOR.matcher(rest);
+        if (!separator.lookingAt()) {
+            return Optional.of(new PrintedSpan(start, start));
+        }
+        return firstArabicNumber(rest.substring(separator.end()))
+                .filter(end -> end >= start)
+                .map(end -> new PrintedSpan(start, end));
+    }
+
+    private static int firstPageEnd(String pages) {
+        Matcher matcher = FIRST_PAGE.matcher(pages);
+        if (!matcher.lookingAt()) {
+            return 0;
+        }
+        return matcher.end();
+    }
+
+    private static Optional<Integer> firstArabicNumber(String pages) {
         Matcher matcher = FIRST_PAGE.matcher(pages);
         if (!matcher.lookingAt()) {
             return Optional.empty();
@@ -85,12 +137,11 @@ public final class PdfLocationResolver {
         return parseInteger(number).filter(page -> page > 0);
     }
 
-    private static int pageOffset(BibEntry fileOwner) {
-        return fileOwner.getField(PAGE_OFFSET)
-                        .map(String::trim)
-                        .filter(value -> !value.isEmpty())
-                        .flatMap(PdfLocationResolver::parseInteger)
-                        .orElse(0);
+    private static Optional<PageSpan> toPdfSpan(PrintedSpan printed, int offset) {
+        return toPdfPage(printed.first(), offset).flatMap(first ->
+                toPdfPage(printed.last(), offset)
+                        .filter(last -> last >= first)
+                        .map(last -> new PageSpan(first, last)));
     }
 
     private static Optional<Integer> toPdfPage(int printedPage, int offset) {
@@ -113,5 +164,12 @@ public final class PdfLocationResolver {
     }
 
     public record PdfLocation(LinkedFile file, Optional<Integer> page, BibEntry fileOwner) {
+    }
+
+    /// Inclusive 1-based pages in a PDF.
+    public record PageSpan(int firstPage, int lastPage) {
+    }
+
+    private record PrintedSpan(int first, int last) {
     }
 }

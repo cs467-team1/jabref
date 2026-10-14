@@ -19,6 +19,8 @@ Note that this project **does not** adhere to [Semantic Versioning](https://semv
 - We added tooltips with action descriptions to menu items. [#9615](https://github.com/JabRef/jabref/issues/9615)
 - We added "Contribute to JabRef" to the Help menu, linking to [contribute.jabref.org](https://contribute.jabref.org). [#17162](https://github.com/JabRef/jabref/pull/17162)
 - We added EasyOCR, PaddleOCR, and AppleOCR as selectable OCR engines, alongside Tesseract and Docling. [#16866](https://github.com/JabRef/jabref/issues/16866)
+- We added copying one paper's pages into a separate PDF when a longer PDF is attached.
+- We added a Split PDF command that creates an entry for each bookmarked paper.
 
 ### Changed
 

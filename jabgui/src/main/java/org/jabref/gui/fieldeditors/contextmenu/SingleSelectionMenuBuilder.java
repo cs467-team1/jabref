@@ -15,6 +15,7 @@ import org.jabref.gui.copyfiles.CopyLinkedFilesAction;
 import org.jabref.gui.fieldeditors.LinkedFileViewModel;
 import org.jabref.gui.fieldeditors.LinkedFilesEditorViewModel;
 import org.jabref.gui.linkedfile.OcrLinkedFileAction;
+import org.jabref.gui.linkedfile.SplitPdfAction;
 import org.jabref.gui.preferences.GuiPreferences;
 import org.jabref.logic.undo.UndoManager;
 import org.jabref.logic.util.TaskExecutor;
@@ -95,6 +96,9 @@ record SingleSelectionMenuBuilder(
         items.add(factory.createMenuItem(
                 StandardActions.PERFORM_OCR,
                 new OcrLinkedFileAction(selectedLinkedFile.getFile(), selectedLinkedFile.getLinkedEntries(), databaseContext, dialogService, preferences, taskExecutor, fileUpdateMonitor, undoManager, stateManager)));
+        items.add(factory.createMenuItem(
+                StandardActions.SPLIT_PDF,
+                new SplitPdfAction(selectedLinkedFile.getFile(), bibEntry.getValue(), databaseContext, dialogService, preferences, taskExecutor, undoManager)));
 
         items.add(factory.createMenuItem(
                 StandardActions.RENAME_FILE_TO_PATTERN,
