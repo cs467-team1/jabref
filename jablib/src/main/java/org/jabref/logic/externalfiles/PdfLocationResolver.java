@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 
 import org.jabref.logic.util.StandardFileType;
 import org.jabref.logic.util.io.FileUtil;
+import org.jabref.logic.util.strings.StringUtil;
 import org.jabref.model.database.BibDatabase;
 import org.jabref.model.entry.BibEntry;
 import org.jabref.model.entry.LinkedFile;
@@ -42,14 +43,11 @@ public final class PdfLocationResolver {
     }
 
     public static Optional<PdfLocation> resolve(BibEntry entry, BibDatabase database) {
-        Optional<LinkedFile> ownPdf = firstPdf(entry);
-        if (ownPdf.isPresent()) {
-            return Optional.of(new PdfLocation(ownPdf.get(), pdfPage(entry, entry), entry));
-        }
-
-        return database.getReferencedEntry(entry)
-                       .flatMap(referenced -> firstPdf(referenced)
-                               .map(file -> new PdfLocation(file, pdfPage(entry, referenced), referenced)));
+        return firstPdf(entry)
+                .map(file -> new PdfLocation(file, pdfPage(entry, entry), entry))
+                .or(() -> database.getReferencedEntry(entry)
+                                  .flatMap(referenced -> firstPdf(referenced)
+                                          .map(file -> new PdfLocation(file, pdfPage(entry, referenced), referenced))));
     }
 
     private static Optional<LinkedFile> firstPdf(BibEntry entry) {
@@ -69,16 +67,15 @@ public final class PdfLocationResolver {
 
     public static Optional<PageSpan> pdfPageSpan(BibEntry entry, BibEntry fileOwner) {
         return entry.getField(StandardField.PAGES)
-                    .map(String::trim)
-                    .filter(pages -> !pages.isEmpty())
+                    .filter(StringUtil::isNotBlank)
                     .flatMap(PdfLocationResolver::printedSpan)
                     .flatMap(printed -> toPdfSpan(printed, pageOffset(fileOwner)));
     }
 
     public static int pageOffset(BibEntry fileOwner) {
         return fileOwner.getField(PAGE_OFFSET)
+                        .filter(StringUtil::isNotBlank)
                         .map(String::trim)
-                        .filter(value -> !value.isEmpty())
                         .flatMap(PdfLocationResolver::parseInteger)
                         .orElse(0);
     }
@@ -89,8 +86,7 @@ public final class PdfLocationResolver {
 
     private static Optional<Integer> firstPrintedPage(BibEntry entry) {
         return entry.getField(StandardField.PAGES)
-                    .map(String::trim)
-                    .filter(pages -> !pages.isEmpty())
+                    .filter(StringUtil::isNotBlank)
                     .flatMap(PdfLocationResolver::firstArabicPage);
     }
 
@@ -99,11 +95,10 @@ public final class PdfLocationResolver {
     }
 
     private static Optional<PrintedSpan> printedSpan(String pages) {
-        Optional<Integer> first = firstArabicNumber(pages);
-        if (first.isEmpty()) {
-            return Optional.empty();
-        }
-        int start = first.get();
+        return firstArabicNumber(pages).flatMap(start -> printedSpanFrom(pages, start));
+    }
+
+    private static Optional<PrintedSpan> printedSpanFrom(String pages, int start) {
         String rest = pages.substring(firstPageEnd(pages));
         if (FOLLOWING_PAGES.matcher(rest).lookingAt()) {
             return Optional.empty();
