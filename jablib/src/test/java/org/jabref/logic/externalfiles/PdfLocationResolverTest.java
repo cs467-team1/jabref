@@ -28,7 +28,7 @@ class PdfLocationResolverTest {
 
     // [utest->req~logic.externalfiles.pdf-location-resolver~1]
     @Test
-    void usesTheEntrysOwnPdfAndFirstPage() {
+    void usesTheEntriesOwnPdfAndFirstPage() {
         BibEntry paper = paper("186--206").withFiles(List.of(PAPER_PDF));
 
         PdfLocation location = PdfLocationResolver.resolve(paper, databaseOf(paper)).orElseThrow();
@@ -86,7 +86,7 @@ class PdfLocationResolverTest {
     }
 
     @Test
-    void prefersTheEntrysOwnPdfOverTheCrossReferencedOne() {
+    void prefersTheEntriesOwnPdfOverTheCrossReferencedOne() {
         BibEntry proceedings = proceedings().withField(PdfLocationResolver.PAGE_OFFSET, "14");
         BibEntry paper = paper("10--12").withFiles(List.of(PAPER_PDF));
 
