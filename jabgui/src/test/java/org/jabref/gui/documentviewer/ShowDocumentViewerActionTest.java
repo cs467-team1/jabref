@@ -89,8 +89,6 @@ class ShowDocumentViewerActionTest extends JavaFxTest {
         Injector.forgetAll();
     }
 
-    /// Covers page ranges, single pages, and positive and negative offsets.
-    /// Invalid page values and calculated pages below one fall back to the first page.
     @ParameterizedTest
     @CsvSource(textBlock = """
             100, 54--86,  0,   54
@@ -115,7 +113,6 @@ class ShowDocumentViewerActionTest extends JavaFxTest {
         });
     }
 
-    /// An attached PDF remains viewable even when the entry has no starting-page metadata.
     @Test
     void executeDefaultsToFirstPageWithoutPages() throws IOException {
         BibEntry entry = createEntry(2);
@@ -130,7 +127,6 @@ class ShowDocumentViewerActionTest extends JavaFxTest {
         });
     }
 
-    /// Multiple selected entries do not identify a unique starting page, so no entry-specific jump is applied.
     @Test
     void executeDoesNotChoosePageForMultipleEntries() throws IOException {
         BibEntry entry = createEntry(60).withField(StandardField.PAGES, "54--86");
@@ -145,7 +141,6 @@ class ShowDocumentViewerActionTest extends JavaFxTest {
         });
     }
 
-    /// Opening another entry linked to the same PDF resets to page 1 when that entry has no pages field.
     @Test
     void executeUpdatesPageWhenReusingViewer() throws IOException {
         BibEntry entry = createEntry(60).withField(StandardField.PAGES, "54--86");
@@ -165,7 +160,6 @@ class ShowDocumentViewerActionTest extends JavaFxTest {
         });
     }
 
-    /// Reusing the document viewer for a different PDF must apply the new entry's starting page.
     @Test
     void executeNavigatesNewDocumentWhenReusingViewer() throws IOException {
         BibEntry shortEntry = createEntry(2).withField(StandardField.PAGES, "1--2");
@@ -187,7 +181,6 @@ class ShowDocumentViewerActionTest extends JavaFxTest {
         });
     }
 
-    /// An entry without a PDF opens the PDF of its cross-referenced entry, at the entry's page plus the offset of the entry owning the PDF.
     // [utest->req~jabgui.documentviewer.open-crossref-pdf-at-page~1]
     @Test
     void executeOpensCrossrefPdfAtResolvedPageAfterConfirmation() throws IOException {
