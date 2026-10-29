@@ -25,7 +25,7 @@ public class ShowDocumentViewerAction extends SimpleCommand {
         this.stateManager = stateManager;
         this.executable.bind(needsEntriesSelected(stateManager).and(
                 ActionHelper.isFilePresentForSelectedEntry(stateManager, preferences)
-                            .or(ActionHelper.isCrossrefPdfPresentForSelectedEntry(stateManager))));
+                            .or(ActionHelper.isCrossrefPdfPresentForSelectedEntry(stateManager, preferences))));
     }
 
     @Override
@@ -47,7 +47,7 @@ public class ShowDocumentViewerAction extends SimpleCommand {
             }
             pdfLocation.ifPresent(location -> {
                 documentViewerView.switchToFile(location.file());
-                documentViewerView.gotoPage(location.page().orElse(1));
+                documentViewerView.gotoPage(location.pageWithin(documentViewerView.pageCount()));
             });
         }
         dialogService.showCustomDialog(documentViewerView);
